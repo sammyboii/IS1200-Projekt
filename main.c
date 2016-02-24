@@ -33,10 +33,56 @@ const uint8_t const bird[] = {
 	16, 40, 76, 74, 57, 71, 81, 45, 46, 40, 16
 };
 
+const uint8_t const num[10][36];
+
+num[0] = {
+	254, 253, 123, 007, 007, 007, 007, 007, 007, 123, 253, 254,
+
+	254, 126, 188, 192, 192, 192, 192, 192, 192, 188, 126, 254,
+
+	000, 001, 001, 001, 001, 001, 001, 001, 001, 001, 001, 000
+};
+
+num[1] = {};
+num[2] = {};
+num[3] = {};
+num[4] = {};
+
+num[5] = {};
+num[6] = {};
+num[7] = {};
+
+num[8] = {
+	254, 253, 123, 135, 135, 135, 135, 135, 135, 123, 253, 254,
+
+	254, 126, 189, 195, 195, 195, 195, 195, 195, 189, 126, 254,
+
+	000, 001, 001, 001, 001, 001, 001, 001, 001, 001, 001, 000
+};
+
+num[9] = {
+	254, 253, 123, 135, 135, 135, 135, 135, 135, 123, 253, 254,
+
+	000, 000, 129, 195, 195, 195, 195, 195, 195, 189, 126, 254,
+
+	000, 001, 001, 001, 001, 001, 001, 001, 001, 001, 001, 000
+};
+
+
 void delay(int cyc) {
 	int i;
 	for(i = cyc; i > 0; i--);
 }
+
+/*
+void interrupt_init() {
+	// INTERRUPT INITIALIZATION 
+		IPC(4) = 0x1F000000;			// prio 7, sub 3: IPC <28:24>
+		IFS(0) = 0x0;					// clear flags
+		IEC(0) = 0x80000;				// SW4 enable interrupts: <IECO:19>
+		enable_interrupt();				// Enable interrupts globally
+}
+*/
 
 uint8_t spi_send_recv(uint8_t data) {
 	while(!(SPI2STAT & 0x08));
@@ -90,15 +136,143 @@ void display_string(int line, char *s) {
 			textbuffer[line][i] = ' ';
 }
 
+void display_number (int x, const uint8_t *data) {
+int i, j;
+	
+	for(i = 0; i < 3; i++) {
+		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		spi_send_recv(0x22); // = set page
+		spi_send_recv(i + 1); // = which page
+
+		spi_send_recv(0x21); // set column address
+		spi_send_recv(x & 0xF); // column lower 4 bits
+		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // upper 4 bits
+		
+		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		
+		for(j = 0; j < 12; j++)
+			spi_send_recv(data[i*12 + j]);
+	}
+}
+
+void print_number (int x) {
+
+uint8_t *num_1, *num_2, *num_3;
+
+num_1 = num[0];
+num_2 = num[0];
+num_3 = num[0];
+
+int digits = 2;
+
+if (x < 100)
+{	
+	if (x < 50)
+	{
+		if (x < 10)
+		{
+			digits = 1;
+			num_1 = num[x];
+		}
+
+		if ((x > 9) & (x < 20))
+		{
+			num_2 = num[1];
+			num_1 = num[x - 10];
+		}
+
+		if ((x > 19) & (x < 30))
+		{
+			num_2 = num[2];
+			num_1 = num[x - 20];
+		}
+
+		if ((x > 29) & (x < 40))
+		{
+			num_2 = num[3];
+			num_1 = num[x - 30];
+		}
+
+		if ((x > 39))
+		{
+			num_2 = num[4];
+			num_1 = num[x - 40];
+		}
+	}
+
+	else
+	{	
+		if ((x < 60))
+		{
+			num_2 = num[5];
+			num_1 = num[x - 50];
+		}
+
+		if ((x < 70) & (x > 59))
+		{
+			num_2 = num[6];
+			num_1 = num[x - 60];
+		}
+
+		if ((x < 80) & (x > 69))
+		{
+			num_2 = num[7];
+			num_1 = num[x - 70];
+		}
+
+		if ((x < 90) & (x > 79))
+		{
+			num_2 = num[8];
+			num_1 = num[x - 80];
+		}
+
+		if (x > 89)
+		{
+			num_2 = num[9];
+			num_1 = num[x - 90];
+		}
+
+	}
+}
+
+else
+{
+	num_3 = num[1];
+	digits = 3;
+}
+
+if (digits == 1)
+{
+	display_update();
+	display_number(58, num_1);
+}
+
+if (digits == 2)
+{
+	display_update();
+	display_number(45, num_2);
+	display_number(60, num_1);
+}
+
+if (digits == 3)
+{
+	display_update();
+	display_number(43, num_3);
+	display_number(58, num_2);
+	display_number(73, num_1);
+}
+
+}
+
 void display_bird(int x, const uint8_t *data) {
 
 		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
 		spi_send_recv(0x22); // = set page
-		spi_send_recv(2); // = which page
+		spi_send_recv(x); // = which page
 		
 		spi_send_recv(0x21); // set column address
-		spi_send_recv(x & 0xF); // column lower 4 bits
-		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // upper 4 bits
+		spi_send_recv(0x18 & 0xF); // column lower 4 bits
+		spi_send_recv(0x10 | ((0x18 >> 4) & 0xF)); // upper 4 bits
 		
 		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
 		int j;
@@ -107,7 +281,7 @@ void display_bird(int x, const uint8_t *data) {
 }
 
 void display_wall(int x, const uint8_t *data) {
-	int i, j, k;
+	int i, j;
 	
 	for(i = 0; i < 4; i++) {
 		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
@@ -149,10 +323,6 @@ void display_update() {
 	}
 }
 
-void dilly (int ms) {
-
-}
-
 int timerinit (void) {
 		/* TIMER STUFF */
 
@@ -190,7 +360,7 @@ int main(void) {
 	TRISGCLR = 0x200;
 	
 	/* Set up input pins */
-	TRISDSET = (1 << 8);
+	TRISDSET = (3 << 7);
 	TRISFSET = (1 << 1);
 	
 	/* Set up SPI as master */
@@ -208,18 +378,62 @@ int main(void) {
 	
 	display_init();
 
-	int h, g;
-	while (1) {
-		for (h = 127; h > 0; h = h - 2)
-		{
-			display_update();
-			display_wall(h, wall);
-			display_bird(24, bird);
-			delay(1000000);
-		}
+	int h, scaler, page, dead, button4, score, sc;
+	page = 0;
+	scaler = 0;
+	dead = 0;
 
+	while (!dead) {
+		for (h = 127; h > 0; h = h - 3)
+		{
+			button4 = ((PORTD >> 7) & 1);
+
+			if (button4) 
+			{
+				scaler = 0;
+				if (page > 0)
+					page--;
+			}
+
+			scaler++;
+			if (scaler == 6)
+			{
+				sc++;
+				page = page + 1;
+				scaler = 0;
+			}
+
+			if (page == 4)
+			{
+				dead = 1;
+				page = 3;
+			}
+
+			if (!dead)
+			{
+				display_update();
+				display_wall(h, wall);
+				display_bird(page, bird);
+				delay(1000000);
+			}
+
+			if (sc = 5) {
+				score++;
+				sc = 0;
+			}
+
+
+		}
 	}
-	
+
+	display_update();
+
+	if (score > 100)
+	{
+		score = 100;
+	}
+
+	print_number(score);
 	
 	return 0;
 }
