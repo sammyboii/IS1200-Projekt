@@ -174,111 +174,64 @@ int i, j;
 }
 
 void print_number (int x) {
-
-int num_1, num_2, num_3;
-
-num_1 = 0;
-num_2 = 0;
-num_3 = 0;
-
-int digits = 2;
-
-if (x < 100)
-{	
-	if (x < 50)
-	{
-		if (x < 10)
-		{
-			digits = 1;
-			num_1 = x;
-		}
-
-		if ((x > 9) & (x < 20))
-		{
-			num_2 = 1;
-			num_1 = x - 10;
-		}
-
-		if ((x > 19) & (x < 30))
-		{
-			num_2 = 2;
-			num_1 = x - 20;
-		}
-
-		if ((x > 29) & (x < 40))
-		{
-			num_2 = 3;
-			num_1 = x - 30;
-		}
-
-		if ((x > 39))
-		{
-			num_2 = 4;
-			num_1 = x - 40;
-		}
-	}
-
-	else
-	{	
-		if ((x < 60))
-		{
-			num_2 = 5;
-			num_1 = x - 50;
-		}
-
-		if ((x < 70) & (x > 59))
-		{
-			num_2 = 6;
-			num_1 = x - 60;
-		}
-
-		if ((x < 80) & (x > 69))
-		{
-			num_2 = 7;
-			num_1 = x - 70;
-		}
-
-		if ((x < 90) & (x > 79))
-		{
-			num_2 = 8;
-			num_1 = x - 80;
-		}
-
-		if (x > 89)
-		{
-			num_2 = 9;
-			num_1 = x - 90;
-		}
-
-	}
-}
-
-else
-{
+	
+	int num_1, num_2, num_3;
+	num_1 = num_2 = 0;
 	num_3 = 1;
-	digits = 3;
-}
 
-if (digits == 1)
-{
-	display_update();
-	display_number(58, num_1, num);
-}
+	int a, c, digits;
+	a = 10;
+	c = 1;
 
-if (digits == 2)
-{
-	display_update();
-	display_number(45, num_2, num);
-	display_number(60, num_1, num);
-}
+	if (x < 100)
+	{
+		digits = 2;
 
-if (digits == 3)
-{
-	display_update();
-	display_number(43, num_3, num);
-	display_number(58, num_2, num);
-	display_number(73, num_1, num);
-}
+		if (x < 9)
+			{
+				digits = 1;
+				num_1 = x;
+				c = 0;
+			}
+
+		while (c)
+		{
+			if ((x > (a - 1)) & (x < (a + 10)))
+			{
+				num_2 = (a / 10);
+				num_1 = (x - a + 10);
+				c = 0;
+			}
+
+			a = a + 10;
+		}
+	}
+	else digits = 3;
+
+	switch (digits)
+	{
+		case '1' :
+		display_update();
+		display_number(58, num_1, num);
+		break;
+
+		case '2' :
+		display_update();
+		display_number(45, num_2, num);
+		display_number(60, num_1, num);
+		break;
+
+		case '3' :
+		display_update();
+		display_number(43, num_3, num);
+		display_number(58, num_2, num);
+		display_number(73, num_1, num);
+		break;
+
+		default :
+		PORTE = 255;
+		break;
+	}
 
 }
 
