@@ -255,7 +255,7 @@ void print_max100 (uint8_t x) {
 			if ((x >= a) & (x < (a + 10)))
 			{
 				num_2 = (a / 10);
-				num_1 = (x - a + 10);
+				num_1 = (x - a);
 				c = 0;
 			}
 
@@ -304,14 +304,10 @@ int timerinit (void) {
 		
 		/* START THE TIMER */
 		T2CONSET = 0x8000;				// T2CON <15> => Start timer
-		
-		uint8_t test = 0;
 }
 
 int main(void) {
-	/* Initialize timer */
 	timerinit();
-	
 	/* Set up peripheral bus clock */
 	OSCCON &= ~0x180000;
 	OSCCON |= 0x080000;
@@ -341,7 +337,7 @@ int main(void) {
 	/* Clear SPIROV*/
 	SPI2STATCLR &= ~0x40;
 	/* Set CKP = 1, MSTEN = 1; */
-    	SPI2CON |= 0x60;
+    SPI2CON |= 0x60;
 	
 	/* Turn on SPI */
 	SPI2CONSET = 0x8000;
