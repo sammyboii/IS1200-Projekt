@@ -304,6 +304,8 @@ int timerinit (void) {
 		
 		/* START THE TIMER */
 		T2CONSET = 0x8000;				// T2CON <15> => Start timer
+		
+		uint8_t test = 0;
 }
 
 int main(void) {
