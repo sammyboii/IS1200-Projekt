@@ -173,6 +173,65 @@ int i, j;
 	}
 }
 
+void display_bird(int x, const uint8_t *data) {
+
+		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		spi_send_recv(0x22); // = set page
+		spi_send_recv(x); // = which page
+		
+		spi_send_recv(0x21); // set column address
+		spi_send_recv(0x18 & 0xF); // column lower 4 bits
+		spi_send_recv(0x10 | ((0x18 >> 4) & 0xF)); // upper 4 bits
+		
+		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		int j;
+		for(j = 0; j < 11; j++)
+			spi_send_recv(data[j]);
+}
+
+void display_wall(int x, const uint8_t *data) {
+	int i, j;
+	
+	for(i = 0; i < 4; i++) {
+		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		spi_send_recv(0x22); // = set page
+		spi_send_recv(i); // = which page
+
+		spi_send_recv(0x21); // set column address
+		spi_send_recv(x & 0xF); // column lower 4 bits
+		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // upper 4 bits
+		
+		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		
+		for(j = 0; j < 2; j++)
+			spi_send_recv(data[i*2 + j]);
+	}
+}
+
+void display_update() {
+	int i, j, k;
+	int c;
+	for(i = 0; i < 4; i++) {
+		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		spi_send_recv(0x22);
+		spi_send_recv(i);
+		
+		spi_send_recv(0x0);
+		spi_send_recv(0x10);
+		
+		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		
+		for(j = 0; j < 16; j++) {
+			c = textbuffer[i][j];
+			if(c & 0x80)
+				continue;
+			
+			for(k = 0; k < 8; k++)
+				spi_send_recv(font[c*8 + k]);
+		}
+	}
+}
+
 void print_number (int x) {
 	
 	int num_1, num_2, num_3;
@@ -233,65 +292,6 @@ void print_number (int x) {
 		break;
 	}
 
-}
-
-void display_bird(int x, const uint8_t *data) {
-
-		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
-		spi_send_recv(0x22); // = set page
-		spi_send_recv(x); // = which page
-		
-		spi_send_recv(0x21); // set column address
-		spi_send_recv(0x18 & 0xF); // column lower 4 bits
-		spi_send_recv(0x10 | ((0x18 >> 4) & 0xF)); // upper 4 bits
-		
-		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
-		int j;
-		for(j = 0; j < 11; j++)
-			spi_send_recv(data[j]);
-}
-
-void display_wall(int x, const uint8_t *data) {
-	int i, j;
-	
-	for(i = 0; i < 4; i++) {
-		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
-		spi_send_recv(0x22); // = set page
-		spi_send_recv(i); // = which page
-
-		spi_send_recv(0x21); // set column address
-		spi_send_recv(x & 0xF); // column lower 4 bits
-		spi_send_recv(0x10 | ((x >> 4) & 0xF)); // upper 4 bits
-		
-		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
-		
-		for(j = 0; j < 2; j++)
-			spi_send_recv(data[i*2 + j]);
-	}
-}
-
-void display_update() {
-	int i, j, k;
-	int c;
-	for(i = 0; i < 4; i++) {
-		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
-		spi_send_recv(0x22);
-		spi_send_recv(i);
-		
-		spi_send_recv(0x0);
-		spi_send_recv(0x10);
-		
-		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
-		
-		for(j = 0; j < 16; j++) {
-			c = textbuffer[i][j];
-			if(c & 0x80)
-				continue;
-			
-			for(k = 0; k < 8; k++)
-				spi_send_recv(font[c*8 + k]);
-		}
-	}
 }
 
 int timerinit (void) {
