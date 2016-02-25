@@ -33,8 +33,7 @@ const uint8_t const bird[] = {
 	16, 40, 76, 74, 57, 71, 81, 45, 46, 40, 16
 };
 
-const uint8_t num[10][36] = 
-	{
+const uint8_t const num[10][36] = {
 		{
 		254, 253, 123, 7, 7, 7, 7, 7, 7, 123, 253, 254,
 		254, 126, 188, 192, 192, 192, 192, 192, 192, 188, 126, 254,
@@ -49,7 +48,7 @@ const uint8_t num[10][36] =
 
 		{
 		1, 3, 7, 135, 135, 135, 135, 135, 135, 123, 253, 254,
-		254, 126, 189, 195, 195, 195, 195, 195. 195, 193, 128, 0,
+		254, 126, 189, 195, 195, 195, 195, 195, 195, 193, 128, 0,
 		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 		},
 
@@ -94,8 +93,7 @@ const uint8_t num[10][36] =
 		0, 0, 129, 195, 195, 195, 195, 195, 195, 189, 126, 254,
 		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
 		}
-	}
-
+	};
 
 void delay(int cyc) {
 	int i;
@@ -154,7 +152,7 @@ void display_string(int line, char *s) {
 			textbuffer[line][i] = ' ';
 }
 
-void display_number (int x, int d, const uint8_t *data) {
+void display_number (int x, int d, const uint8_t* data) {
 int i, j;
 	
 	for(i = 0; i < 3; i++) {
@@ -169,7 +167,7 @@ int i, j;
 		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
 		
 		for(j = 0; j < 12; j++)
-			spi_send_recv(data[d][i*12 + j]);
+			spi_send_recv(data[i*12 + j]);
 	}
 }
 
@@ -271,20 +269,20 @@ void print_number (int x) {
 	{
 		case '1' :
 		display_update();
-		display_number(58, num_1, num);
+		display_number(58, num_1, num[num_1]);
 		break;
 
 		case '2' :
 		display_update();
-		display_number(45, num_2, num);
-		display_number(60, num_1, num);
+		display_number(45, num_2, num[num_2]);
+		display_number(60, num_1, num[num_1]);
 		break;
 
 		case '3' :
 		display_update();
-		display_number(43, num_3, num);
-		display_number(58, num_2, num);
-		display_number(73, num_1, num);
+		display_number(43, num_3, num[0]);
+		display_number(58, num_2, num[0]);
+		display_number(73, num_1, num[num_1]);
 		break;
 
 		default :
@@ -353,7 +351,6 @@ int main(void) {
 	page = 0;
 	scaler = 0;
 	dead = 0;
-	d1, d2, d3 = 0;
 
 	while (!dead) {
 		for (h = 127; h > 0; h = h - 3)
