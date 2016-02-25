@@ -152,7 +152,7 @@ void display_string(int line, char *s) {
 			textbuffer[line][i] = ' ';
 }
 
-void display_number (int x, int d, const uint8_t* data) {
+void display_number (int x, const uint8_t* data) {
 int i, j;
 	
 	for(i = 0; i < 3; i++) {
@@ -230,13 +230,12 @@ void display_update() {
 	}
 }
 
-void print_number (int x) {
+void print_max100 (uint8_t x) {
 	
-	int num_1, num_2, num_3;
+	uint8_t num_1, num_2;
 	num_1 = num_2 = 0;
-	num_3 = 1;
 
-	int a, c, digits;
+	uint8_t a, c, digits;
 	a = 10;
 	c = 1;
 
@@ -244,7 +243,7 @@ void print_number (int x) {
 	{
 		digits = 2;
 
-		if (x < 9)
+		if (x < 10)
 			{
 				digits = 1;
 				num_1 = x;
@@ -253,7 +252,7 @@ void print_number (int x) {
 
 		while (c)
 		{
-			if ((x > (a - 1)) & (x < (a + 10)))
+			if ((x >= a) & (x < (a + 10)))
 			{
 				num_2 = (a / 10);
 				num_1 = (x - a + 10);
@@ -265,28 +264,26 @@ void print_number (int x) {
 	}
 	else digits = 3;
 
+	display_update();
 	switch (digits)
 	{
 		case '1' :
-		display_update();
-		display_number(58, num_1, num[num_1]);
+		display_number(58, num[num_1]);
 		break;
 
 		case '2' :
-		display_update();
-		display_number(45, num_2, num[num_2]);
-		display_number(60, num_1, num[num_1]);
+		display_number(45, num[num_2]);
+		display_number(60, num[num_1]);
 		break;
 
 		case '3' :
-		display_update();
-		display_number(43, num_3, num[0]);
-		display_number(58, num_2, num[0]);
-		display_number(73, num_1, num[num_1]);
+		display_number(43, num[0]);
+		display_number(58, num[0]);
+		display_number(73, num[1]);
 		break;
 
 		default :
-		PORTE = 255;
+		PORTE = 170;
 		break;
 	}
 
@@ -300,10 +297,11 @@ int timerinit (void) {
 
 		/* SET TIMER TO START AT 0 */
 		TMR2 = 0x0;
+		IFS(0) = 0x0;
 
 		/* SET PERIOD */
 		PR2 = TMR2PERIOD;
-
+		
 		/* START THE TIMER */
 		T2CONSET = 0x8000;				// T2CON <15> => Start timer
 }
@@ -347,7 +345,7 @@ int main(void) {
 	
 	display_init();
 
-	int h, scaler, page, dead, button4, score, sc;
+	uint8_t h, scaler, page, dead, button4, score, sc;
 	page = 0;
 	scaler = 0;
 	dead = 0;
@@ -389,19 +387,15 @@ int main(void) {
 			if (sc = 5) {
 				score++;
 				sc = 0;
+
+				if (score == 100)
+					sc = 6; 		// stop counting score
 			}
 
 		}
 	}
 
-	display_update();
-
-	if (score > 100)
-	{
-		score = 100;
-	}
-
-	print_number(score);
+	print_max100(score);
 	
 	return 0;
 }
