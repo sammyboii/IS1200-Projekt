@@ -307,7 +307,9 @@ int timerinit (void) {
 }
 
 int main(void) {
+	/* Initialize timer */
 	timerinit();
+	
 	/* Set up peripheral bus clock */
 	OSCCON &= ~0x180000;
 	OSCCON |= 0x080000;
@@ -337,7 +339,7 @@ int main(void) {
 	/* Clear SPIROV*/
 	SPI2STATCLR &= ~0x40;
 	/* Set CKP = 1, MSTEN = 1; */
-    SPI2CON |= 0x60;
+    	SPI2CON |= 0x60;
 	
 	/* Turn on SPI */
 	SPI2CONSET = 0x8000;
@@ -345,12 +347,11 @@ int main(void) {
 	
 	display_init();
 
-	uint8_t h, scaler, page, dead, button4, score, sc;
-	page = 0;
-	scaler = 0;
-	dead = 0;
+	uint8_t h, scaler, page, alive, button4, score, sc;
+	page = scaler = score = 0;
+	alive = 1;
 
-	while (!dead) {
+	while (alive) {
 		for (h = 127; h > 0; h = h - 3)
 		{
 			button4 = ((PORTD >> 7) & 1);
@@ -372,11 +373,11 @@ int main(void) {
 
 			if (page == 4)
 			{
-				dead = 1;
+				alive = 0;
 				page = 3;
 			}
 
-			if (!dead)
+			if (alive)
 			{
 				display_update();
 				display_wall(h, wall);
