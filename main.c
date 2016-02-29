@@ -1,5 +1,6 @@
 #include <pic32mx.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define DISPLAY_VDD PORTFbits.RF6
 #define DISPLAY_VBATT PORTFbits.RF5
@@ -25,8 +26,12 @@ char textbuffer[4][16];
 
 static const uint8_t const font[1024];
 
-const uint8_t const wall[] = {
-	255, 255, 15, 15, 0, 0, 255, 255
+const uint8_t const wall[3][8] = {
+
+	{0, 0, 255, 255, 255, 255, 255, 255},
+	{255, 255, 0, 0, 255, 255, 255, 255},
+	{255, 255, 255, 255, 0, 0, 255, 255}
+
 };
 
 const uint8_t const bird[] = {
@@ -42,7 +47,7 @@ const uint8_t const num[10][36] = {
 
 		{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 252, 254,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 126, 254,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 126, 254,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		},
 
@@ -60,14 +65,14 @@ const uint8_t const num[10][36] = {
 
 		{
 		254, 252, 120, 128, 128, 128, 128, 128, 128, 120, 252, 254,
-		0, 0, 1, 3, 3, 3, 3, 3, 3, 188, 126, 254,
+		0, 0, 1, 3, 3, 3, 3, 3, 3, 60, 126, 254,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		},
 
 		{
 		254, 253, 123, 135, 135, 135, 135, 135, 135, 7, 3, 1,
 		0, 128, 193, 195, 195, 195, 195, 195, 195, 189, 126, 254,
-		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
 		},
 
 		{
@@ -78,7 +83,7 @@ const uint8_t const num[10][36] = {
 
 		{
 		254, 253, 123, 7, 7, 7, 7, 7, 7, 123, 253, 254,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 126, 254,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 126, 254,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		},
 
@@ -172,10 +177,17 @@ int i, j;
 }
 
 void display_bird(int x, const uint8_t *data) {
+		int shf = 0;
+		int p = 0;
+
+		if (x == 1 | x == 3 | x == 5 | x == 7)
+		{
+
+		p = (x == 1)? 0 : (x == 3)? 1 : (x == 5)? 2 : (x == 7)? 3 : p;
 
 		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
 		spi_send_recv(0x22); // = set page
-		spi_send_recv(x); // = which page
+		spi_send_recv(p); // = which page
 		
 		spi_send_recv(0x21); // set column address
 		spi_send_recv(0x18 & 0xF); // column lower 4 bits
@@ -184,7 +196,26 @@ void display_bird(int x, const uint8_t *data) {
 		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
 		int j;
 		for(j = 0; j < 11; j++)
-			spi_send_recv(data[j]);
+			spi_send_recv((data[j] << 4));
+
+		x++;
+		shf = 4;
+		}
+
+		p = (x == 0)? 0 : (x == 2)? 1 : (x == 4)? 2 : (x == 6)? 3 : p;
+
+		DISPLAY_COMMAND_DATA_PORT &= ~DISPLAY_COMMAND_DATA_MASK;
+		spi_send_recv(0x22); // = set page
+		spi_send_recv(p); // = which page
+		
+		spi_send_recv(0x21); // set column address
+		spi_send_recv(0x18 & 0xF); // column lower 4 bits
+		spi_send_recv(0x10 | ((0x18 >> 4) & 0xF)); // upper 4 bits
+		
+		DISPLAY_COMMAND_DATA_PORT |= DISPLAY_COMMAND_DATA_MASK;
+		int j;
+		for(j = 0; j < 11; j++)
+			spi_send_recv(data[j] >> shf);
 }
 
 void display_wall(int x, const uint8_t *data) {
@@ -267,23 +298,23 @@ void print_max100 (uint8_t x) {
 	display_update();
 	switch (digits)
 	{
-		case '1' :
+		case 1 :
 		display_number(58, num[num_1]);
 		break;
 
-		case '2' :
+		case 2 :
 		display_number(45, num[num_2]);
 		display_number(60, num[num_1]);
 		break;
 
-		case '3' :
-		display_number(43, num[0]);
+		case 3 :
+		display_number(43, num[1]);
 		display_number(58, num[0]);
-		display_number(73, num[1]);
+		display_number(73, num[0]);
 		break;
 
 		default :
-		PORTE = 170;
+		PORTE = 2;
 		break;
 	}
 
@@ -345,52 +376,75 @@ int main(void) {
 	
 	display_init();
 
-	uint8_t h, scaler, page, alive, button4, score, sc;
-	page = scaler = score = 0;
+	uint8_t h, birddrop, page, alive, button4, score, sc, j, k, block;
+	page = birddrop = score = sc = j = button4 = block = 0;
+	k = 2;
 	alive = 1;
 
 	while (alive) {
-		for (h = 127; h > 0; h = h - 3)
+		for (h = 128; h > 0; h = h - 1)
 		{
-			button4 = ((PORTD >> 7) & 1);
 
-			if (button4) 
-			{
-				scaler = 0;
+			button4 = (PORTD >> 7) & 1;
+
+			if (button4 && (!block)) 
+			{	
+				birddrop = 0;
 				if (page > 0)
 					page--;
+
+				block = 1;
+			}
+			else if (!button4) {
+				block = 0;
 			}
 
-			scaler++;
-			if (scaler == 6)
+			birddrop++;
+			if (birddrop == 8)
 			{
-				sc++;
 				page = page + 1;
-				scaler = 0;
+				birddrop = 0;
 			}
 
-			if (page == 4)
+			if (page == 8)
 			{
 				alive = 0;
-				page = 3;
+				page = 7;
 			}
 
 			if (alive)
 			{
+				PORTE = k | (j << 4);
+				if (h == 126) {
+					j++;
+					if (j == 3)
+						j = 0;
+				}
+
+				if (((h + 64) & 0xFF) == 126) {
+					k++;
+					if (k == 3)
+						k = 0;
+				}
+
 				display_update();
-				display_wall(h, wall);
+				display_wall(h, wall[j]);
+				display_wall(((h+64) & 0xFF), wall[k]);
 				display_bird(page, bird);
-				delay(1000000);
+				delay(500000);
+
+				if (IFS(0) & 0x100)
+				{
+					sc++;
+
+					if ((sc == 25) & (score < 100)) {
+						score++;
+						sc = 0;
+					}
+
+					IFS(0) = 0;
+				}
 			}
-
-			if (sc = 5) {
-				score++;
-				sc = 0;
-
-				if (score == 100)
-					sc = 6; 		// stop counting score
-			}
-
 		}
 	}
 
