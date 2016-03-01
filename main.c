@@ -28,9 +28,9 @@ static const uint8_t const font[1024];
 
 const uint8_t const wall[3][8] = {
 
-	{0, 0, 255, 255, 255, 255, 255, 255},
-	{255, 255, 0, 0, 255, 255, 255, 255},
-	{255, 255, 255, 255, 0, 0, 255, 255}
+	{0, 0, 0, 0, 255, 255, 255, 255},
+	{255, 255, 0, 0, 0, 0, 255, 255},
+	{255, 255, 255, 255, 0, 0, 0, 0}
 
 };
 
@@ -38,6 +38,8 @@ const uint8_t const bird[] = {
 	16, 40, 76, 74, 57, 71, 81, 45, 46, 40, 16
 };
 
+
+/* FANCY SCORE NUMBERS */
 const uint8_t const num[10][36] = {
 		{
 		254, 253, 123, 7, 7, 7, 7, 7, 7, 123, 253, 254,
@@ -376,15 +378,19 @@ int main(void) {
 	
 	display_init();
 
-	uint8_t h, birddrop, page, alive, button4, score, sc, j, k, block;
-	page = birddrop = score = sc = j = button4 = block = 0;
+	uint8_t h, g, n, birddrop, page, alive, button4, score, j, k, block;
+
+	while (1)
+	{
+	page = birddrop = score = j = button4 = block = g = 0;
 	k = 2;
 	alive = 1;
-
+	n = 128;
+	
 	while (alive) {
 		for (h = 128; h > 0; h = h - 1)
 		{
-
+			PORTE = score;
 			button4 = (PORTD >> 7) & 1;
 
 			if (button4 && (!block)) 
@@ -406,49 +412,105 @@ int main(void) {
 				birddrop = 0;
 			}
 
-			if (page == 8)
+			if (page == 7)
 			{
 				alive = 0;
-				page = 7;
+				h = 0;
 			}
 
 			if (alive)
 			{
-				PORTE = k | (j << 4);
 				if (h == 126) {
 					j++;
 					if (j == 3)
 						j = 0;
 				}
 
-				if (((h + 64) & 0xFF) == 126) {
+				if (n == 126) {
 					k++;
 					if (k == 3)
 						k = 0;
 				}
 
 				display_update();
-				display_wall(h, wall[j]);
-				display_wall(((h+64) & 0xFF), wall[k]);
+
+				if ((h < 127) && (h > 1))
+					display_wall(h, wall[j]);
+
+				if (h == 64)
+					g = 1;
+
+				if (g) {
+					if ((n < 127) && (n > 1))
+						display_wall(n, wall[k]);
+					n--;
+				}
+
+				if (n == 0)
+					n = 128;
+
 				display_bird(page, bird);
 				delay(500000);
 
-				if (IFS(0) & 0x100)
+				/* WALL DETECTION */
+				if ((h < 36) && (h > 23))
 				{
-					sc++;
-
-					if ((sc == 25) & (score < 100)) {
-						score++;
-						sc = 0;
+					if (j == 0)
+					{
+						if (page > 2)
+							alive = 0;
 					}
 
-					IFS(0) = 0;
+					if (j == 1)
+					{
+						if ((page < 3) || (page > 4))
+							alive = 0;
+					}
+
+					if (j == 2)
+					{
+						if (page < 5)
+							alive = 0;
+					}
+
+					if (alive && (h == 24))
+						score++;
+
+				}
+
+				if ((n < 36) && (n > 23))
+				{
+					if (k == 0)
+					{
+						if (page > 2)
+							alive = 0;
+					}
+
+					if (k == 1)
+					{
+						if ((page < 3) || (page > 4))
+							alive = 0;
+					}
+
+					if (k == 2)
+					{
+						if (page < 5)
+							alive = 0;
+					}
+
+					if (alive && (n == 24))
+						score++;
 				}
 			}
 		}
 	}
 
+	if (score > 100)
+		score == 100;
+
 	print_max100(score);
-	
+
+	while (!((PORTD >> 5) & 1));
+	}
 	return 0;
 }
