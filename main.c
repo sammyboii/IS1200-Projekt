@@ -455,48 +455,29 @@ int main(void) {
 				/* WALL DETECTION */
 				if ((h < 36) && (h > 23))
 				{
-					if (j == 0)
-					{
-						if (page > 2)
+					if ((j == 0) && (page > 2))
 							alive = 0;
-					}
 
-					if (j == 1)
-					{
-						if ((page < 3) || (page > 4))
+					if ((j == 1) && ((page < 3) || (page > 4)))
 							alive = 0;
-					}
 
-					if (j == 2)
-					{
-						if (page < 5)
+					if ((j == 2) && (page < 5))
 							alive = 0;
-					}
 
 					if (alive && (h == 24))
 						score++;
-
 				}
 
 				if ((n < 36) && (n > 23))
 				{
-					if (k == 0)
-					{
-						if (page > 2)
+					if ((k == 0) && (page > 2))
 							alive = 0;
-					}
 
-					if (k == 1)
-					{
-						if ((page < 3) || (page > 4))
+					if ((k == 1) && ((page < 3) || (page > 4)))
 							alive = 0;
-					}
 
-					if (k == 2)
-					{
-						if (page < 5)
+					if ((k == 2) && (page < 5))
 							alive = 0;
-					}
 
 					if (alive && (n == 24))
 						score++;
