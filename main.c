@@ -6,8 +6,6 @@
 #define DISPLAY_VBATT PORTFbits.RF5
 #define DISPLAY_COMMAND_DATA PORTFbits.RF4
 #define DISPLAY_RESET PORTGbits.RG9
-
-
 #define DISPLAY_VDD_PORT PORTF
 #define DISPLAY_VDD_MASK 0x40
 #define DISPLAY_VBATT_PORT PORTF
@@ -16,16 +14,11 @@
 #define DISPLAY_COMMAND_DATA_MASK 0x10
 #define DISPLAY_RESET_PORT PORTG
 #define DISPLAY_RESET_MASK 0x200
-#define TMR2PERIOD ((80000000 / 256) / 10)
-
-#if TMR2PERIOD > 0xFFFF
-#error "Timer_period_is_too_big."
-#endif
 
 char textbuffer[4][16];
-
 static const uint8_t const font[1024];
 
+/* THREE DIFFERENT WALLS */
 const uint8_t const wall[3][8] = {
 
 	{0, 0, 0, 0, 255, 255, 255, 255},
@@ -34,12 +27,13 @@ const uint8_t const wall[3][8] = {
 
 };
 
+/* THE ACTUAL BIRD */
 const uint8_t const bird[] = {
 	16, 40, 76, 74, 57, 71, 81, 45, 46, 40, 16
 };
 
 
-/* FANCY SCORE NUMBERS */
+/* FANCY SCORE NUMBERS (0-9) */
 const uint8_t const num[10][36] = {
 		{
 		254, 253, 123, 7, 7, 7, 7, 7, 7, 123, 253, 254,
@@ -144,22 +138,8 @@ void display_init() {
 	spi_send_recv(0xAF);
 }
 
-void display_string(int line, char *s) {
-	int i;
-	if(line < 0 || line >= 4)
-		return;
-	if(!s)
-		return;
-	
-	for(i = 0; i < 16; i++)
-		if(*s) {
-			textbuffer[line][i] = *s;
-			s++;
-		} else
-			textbuffer[line][i] = ' ';
-}
-
-void display_number (int x, const uint8_t* data) {
+/* FUNCTION FOR PRINTING A NUMBER FROM ARRAY */
+void display_number(int x, const uint8_t* data) {
 int i, j;
 	
 	for(i = 0; i < 3; i++) {
@@ -178,6 +158,7 @@ int i, j;
 	}
 }
 
+/* FUNCTION FOR DRAWING OUR BIRD AT THE CORRECT POSITION */
 void display_bird(int x, const uint8_t *data) {
 		int shf = 0;
 		int p = 0;
@@ -220,6 +201,7 @@ void display_bird(int x, const uint8_t *data) {
 			spi_send_recv(data[j] >> shf);
 }
 
+/* FUNCTION FOR DRAWING THE WALLS */
 void display_wall(int x, const uint8_t *data) {
 	int i, j;
 	
@@ -263,6 +245,7 @@ void display_update() {
 	}
 }
 
+/* FUNCTION FOR DRAWING THE SCORE USING CUSTOM FONT */
 void print_max100 (uint8_t x) {
 	
 	uint8_t num_1, num_2;
@@ -322,25 +305,7 @@ void print_max100 (uint8_t x) {
 
 }
 
-int timerinit (void) {
-		/* TIMER STUFF */
-
-		/* 1:256 PRESCALE */
-		T2CON = 0x70;					// TCKPS <6:4>, 111 => 1:256
-
-		/* SET TIMER TO START AT 0 */
-		TMR2 = 0x0;
-		IFS(0) = 0x0;
-
-		/* SET PERIOD */
-		PR2 = TMR2PERIOD;
-		
-		/* START THE TIMER */
-		T2CONSET = 0x8000;				// T2CON <15> => Start timer
-}
-
 int main(void) {
-	timerinit();
 	/* Set up peripheral bus clock */
 	OSCCON &= ~0x180000;
 	OSCCON |= 0x080000;
@@ -378,14 +343,30 @@ int main(void) {
 	
 	display_init();
 
+	/* GAME PARAMETERS */
 	uint8_t h, g, n, birddrop, page, alive, button4, score, j, k, block;
 
+	/* ACTUAL GAME STARTS */
 	while (1)
 	{
 	page = birddrop = score = j = button4 = block = g = 0;
 	k = 2;
 	alive = 1;
 	n = 128;
+
+	/* 
+	alive : bird life status
+	button4 : BTN4
+	h : position of first wall
+	n : position of second wall
+	g : wall-offset reached, allow drawing 2nd wall
+	j : type of wall (wall 1)
+	k : type of wall (wall 2)
+	birddrop : counter for dropping the birds height
+	page : bird's current vertical position
+	score : current score
+	block : prevent holding of button4
+	*/
 	
 	while (alive) {
 		for (h = 128; h > 0; h = h - 1)
@@ -393,6 +374,7 @@ int main(void) {
 			PORTE = score;
 			button4 = (PORTD >> 7) & 1;
 
+			/* MOVE THE BIRD UP ONCE WHEN PRESSING BUTTON */
 			if (button4 && (!block)) 
 			{	
 				birddrop = 0;
@@ -405,6 +387,7 @@ int main(void) {
 				block = 0;
 			}
 
+			/* KEEP THE BIRD FALLING */
 			birddrop++;
 			if (birddrop == 8)
 			{
@@ -412,14 +395,17 @@ int main(void) {
 				birddrop = 0;
 			}
 
+			/* DIE IF YOU HIT THE GROUND */
 			if (page == 7)
 			{
 				alive = 0;
 				h = 0;
 			}
 
+			/* IF STILL ALIVE, UPDATE AND DRAW ALL GRAPHICAL ELEMENTS */
 			if (alive)
 			{
+				/* CYCLE CORRECTLY BETWEEN WALLS */
 				if (h == 126) {
 					j++;
 					if (j == 3)
@@ -434,9 +420,11 @@ int main(void) {
 
 				display_update();
 
+				/* DRAW A NEW WALL WHEN IT HAS TRAVELLED ACROSS THE SCREEN */
 				if ((h < 127) && (h > 1))
 					display_wall(h, wall[j]);
 
+				/* KEEP TWO WALLS AT THE SCREEN SIMULTANEOUSLY, ONE OFFSET BY 64 PX */
 				if (h == 64)
 					g = 1;
 
@@ -486,11 +474,13 @@ int main(void) {
 		}
 	}
 
+	/* MAX SCORE 100 */
 	if (score > 100)
 		score == 100;
 
 	print_max100(score);
 
+	/* RESET GAME USING BTN2 */
 	while (!((PORTD >> 5) & 1));
 	}
 	return 0;
